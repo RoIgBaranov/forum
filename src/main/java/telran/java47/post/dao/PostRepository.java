@@ -15,6 +15,6 @@ public interface PostRepository extends MongoRepository<Post, String> {
 	
 	Stream<Post> findByTagsIn(List<String> tags);
 	
-	Stream<Post> findByDateCreatedBetween(LocalDate from, LocalDate to);
+	Stream<Post> findByDateCreatedBetween(LocalDate dateFrom, LocalDate dateTo);
 
 }

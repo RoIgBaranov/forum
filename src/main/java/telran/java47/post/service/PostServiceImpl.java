@@ -89,7 +89,7 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	public Iterable<PostDto> findPostsByPeriod(DatePeriodDto datePeriodDto) {
-		return postRepository.findByDateCreatedBetween(datePeriodDto.getFrom(), datePeriodDto.getTo())
+		return postRepository.findByDateCreatedBetween(datePeriodDto.getDatefrom(), datePeriodDto.getDateTo())
 							.map(p -> modelMapper.map(p, PostDto.class))
 							.toList();
 	}
