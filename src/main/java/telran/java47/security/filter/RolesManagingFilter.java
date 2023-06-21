@@ -17,10 +17,11 @@ import lombok.RequiredArgsConstructor;
 import telran.java47.accounting.dao.UserAccountRepository;
 import telran.java47.accounting.model.UserAccount;
 
-@RequiredArgsConstructor
+
 @Component
-@Order(30)
-public class OwnerFilter implements Filter {
+@RequiredArgsConstructor
+@Order(20)
+public class RolesManagingFilter implements Filter {
 	
 	final UserAccountRepository userAccountRepository;
 
@@ -30,30 +31,19 @@ public class OwnerFilter implements Filter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 		
-		if (checkEndPoint(request.getMethod(), request.getServletPath()) 
-				&& !request.getServletPath().substring(14).equalsIgnoreCase(request.getUserPrincipal().getName())) {
-			response.sendError(403, "Changing is forbidden. You are not owner");
-			return;
-		}
-		if(checkEndPointDelete(request.getServletPath(),request.getMethod())) {
-			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).orElse(null);
-			if(!request.getServletPath().substring(14).equalsIgnoreCase(request.getUserPrincipal().getName())
-					&& !userAccount.getRoles().contains("ADMIN")) {
-				response.sendError(403, "Changing is forbidden. You are not owner");
+		if(checkEndPoint(request.getMethod(), request.getServletPath())) {
+			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).get();
+			if(!userAccount.getRoles().contains("Administrator".toUpperCase())) {
+				response.sendError(403);
 				return;
 			}
 		}
-		
 		chain.doFilter(request, response);
 
 	}
-
-	private boolean checkEndPointDelete(String path, String method) {
-		return "DELETE".equalsIgnoreCase(method) && path.matches("/account/user/[^/]+");
-	}
-
+	
 	private boolean checkEndPoint(String method, String path) {
-		return ("PUT".equalsIgnoreCase(method)&& path.matches("/account/user/[^/]+"));
+		return path.matches("/account/user/\\w+/role/\\w+/?");
 	}
 
 }

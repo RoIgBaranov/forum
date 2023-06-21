@@ -1,6 +1,7 @@
 package telran.java47.security.filter;
 
 import java.io.IOException;
+import java.security.Principal;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -17,39 +18,36 @@ import lombok.RequiredArgsConstructor;
 import telran.java47.accounting.dao.UserAccountRepository;
 import telran.java47.accounting.model.UserAccount;
 
-
-@Component
 @RequiredArgsConstructor
-@Order(20)
-public class AdminFilter implements Filter {
+@Component
+@Order(40)
+public class DeleteUserFilter implements Filter {
 	
 	final UserAccountRepository userAccountRepository;
-	
+
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
-		if (checkEndPointByPath(request.getServletPath())) {
-			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).orElse(null);
-			if(!userAccount.getRoles().contains("ADMIN")) {
-				response.sendError(403, "Changing is forbidden. Check your rights");
+		String path = request.getServletPath();
+		if (checkEndPoint(request.getMethod(), path)) {
+			Principal principal = request.getUserPrincipal();
+			String[] arr = path.split("/");
+			String user = arr[arr.length - 1];
+			UserAccount userAccount = userAccountRepository.findById(principal.getName()).get();
+			if (!(principal.getName().equalsIgnoreCase(user) 
+					|| userAccount.getRoles().contains("Administrator".toUpperCase()))) {
+				response.sendError(403);
 				return;
 			}
 		}
-		if(checkEndPointByMethod(request.getMethod())) {
-			
-		}
 		chain.doFilter(request, response);
-		
+
 	}
 
-	private boolean checkEndPointByMethod(String method) {
-		return "DELETE".equalsIgnoreCase(method) ;
-	}
-
-	private boolean checkEndPointByPath(String servletPath) {
-		return servletPath.matches("/account/user/[^/]+/role/[^/]+");
+	private boolean checkEndPoint(String method, String path) {
+		return "DELETE".equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?");
 	}
 
 }

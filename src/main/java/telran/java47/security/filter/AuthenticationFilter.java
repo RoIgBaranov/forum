@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import telran.java47.accounting.dao.UserAccountRepository;
-import telran.java47.accounting.dto.exceptions.UserNotFoundException;
 import telran.java47.accounting.model.UserAccount;
 
 @RequiredArgsConstructor
@@ -54,7 +53,8 @@ public class AuthenticationFilter implements Filter {
 	}
 
 	private boolean checkEndPoint(String method, String path) {
-		return !("POST".equalsIgnoreCase(method) && path.matches("/account/register/?"));
+		return (!("POST".equalsIgnoreCase(method) && (path.matches("/account/register/?"))))
+		|| !("GET".equalsIgnoreCase(method) && path.matches("/forum/posts/\\w+/?"));
 	}
 
 	private String[] getCredentials(String token) {
