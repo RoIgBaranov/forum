@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -33,12 +34,11 @@ public class UpdatePostFilter implements Filter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 		String path = request.getServletPath();
-		if (checkEndPoint(request.getMethod(), path)) {
+		if (checkEndPoint(HttpMethod.valueOf(request.getMethod()), path)) {
 			Principal principal = request.getUserPrincipal();
 			String[] arr = path.split("/");
-			Post post = postRepository.findById(arr[arr.length-1]).orElseThrow(()-> new PostNotFoundException());
-			String author = post.getAuthor();
-			if(!author.equalsIgnoreCase(principal.getName())) {
+			Post post = postRepository.findById(arr[arr.length-1]).orElse(null);
+			if(post==null || !principal.getName().equals(post.getAuthor())) {
 				response.sendError(403);
 				return;
 			}
@@ -47,8 +47,8 @@ public class UpdatePostFilter implements Filter {
 		chain.doFilter(request, response);
 	}
 	
-	private boolean checkEndPoint(String method, String path) {
-		return "PUT".equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?");
+	private boolean checkEndPoint(HttpMethod method, String path) {
+		return HttpMethod.PUT.equals(method) && path.matches("/forum/post/\\w+/?");
 	}
 
 }

@@ -1,7 +1,6 @@
 package telran.java47.security.filter;
 
 import java.io.IOException;
-import java.security.Principal;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -16,25 +15,25 @@ import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import telran.java47.accounting.dao.UserAccountRepository;
+import telran.java47.accounting.model.UserAccount;
+import telran.java47.security.model.User;
+import telran.java47.security.roles.Role;
 
 
-@RequiredArgsConstructor
 @Component
-@Order(30)
-public class AddPostOrCommentAndUpdateUserByOwnerFilter implements Filter {
+@Order(20)
+public class AdminManagingRolesFilter implements Filter {
+	
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
-		String path = request.getServletPath();
-		if (checkEndPoint(request.getMethod(), path)) {
-			Principal principal = request.getUserPrincipal();
-			String[] arr = path.split("/");
-			String user = arr[arr.length - 1];
-			
-			if (!principal.getName().equalsIgnoreCase(user)) {
+		
+		if(checkEndPoint(request.getMethod(), request.getServletPath())) {
+			User user = (User) request.getUserPrincipal();
+			if(!user.getRoles().contains(Role.ADMIN)) {
 				response.sendError(403);
 				return;
 			}
@@ -42,11 +41,9 @@ public class AddPostOrCommentAndUpdateUserByOwnerFilter implements Filter {
 		chain.doFilter(request, response);
 
 	}
-
+	
 	private boolean checkEndPoint(String method, String path) {
-		return ("PUT".equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?")) 
-				|| ("POST".equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?"))
-				|| ("PUT".equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/comment/\\w+/?"));
+		return path.matches("/account/user/\\w+/role/\\w+/?");
 	}
 
 }

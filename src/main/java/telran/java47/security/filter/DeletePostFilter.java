@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,8 @@ import telran.java47.accounting.model.UserAccount;
 import telran.java47.post.dao.PostRepository;
 import telran.java47.post.exceptions.PostNotFoundException;
 import telran.java47.post.model.Post;
+import telran.java47.security.model.User;
+import telran.java47.security.roles.Role;
 
 
 @Component
@@ -27,7 +30,6 @@ import telran.java47.post.model.Post;
 @RequiredArgsConstructor
 public class DeletePostFilter implements Filter {
 
-	final UserAccountRepository userAccountRepository;
 	final PostRepository postRepository;
 	
 	@Override
@@ -36,13 +38,13 @@ public class DeletePostFilter implements Filter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 		String path = request.getServletPath();
-		if (checkEndPoint(request.getMethod(), path)) {
-			Principal principal = request.getUserPrincipal();
-			UserAccount userAccount = userAccountRepository.findById(principal.getName()).get();
+		if (checkEndPoint(HttpMethod.valueOf(request.getMethod()), path)) {
+			User user = (User) request.getUserPrincipal();
 			String[] arr = path.split("/");
-			Post post = postRepository.findById(arr[arr.length-1]).orElseThrow(()-> new PostNotFoundException());
+			Post post = postRepository.findById(arr[arr.length-1]).orElse(null);
 			String author = post.getAuthor();
-			if(!author.equalsIgnoreCase(principal.getName())&& !userAccount.getRoles().contains("MODERATOR")) {
+			if(post == null || !(author.equalsIgnoreCase(user.getName())
+					|| user.getRoles().contains(Role.MODERATOR))) {
 				response.sendError(403);
 				return;
 			}
@@ -51,8 +53,8 @@ public class DeletePostFilter implements Filter {
 		chain.doFilter(request, response);
 	}
 
-	private boolean checkEndPoint(String method, String path) {
-		return "DELETE".equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?");
+	private boolean checkEndPoint(HttpMethod method, String path) {
+		return HttpMethod.DELETE.equals(method) && path.matches("/forum/post/\\w+/?");
 	}
 
 }
